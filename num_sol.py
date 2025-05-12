@@ -1,4 +1,3 @@
-# --- Modified num_sol.py to save FDM solution ---
 import numpy as np
 import matplotlib.pyplot as plt
 
@@ -28,21 +27,25 @@ for n in range(1, nt):
         u[i] = (un[i]
                 - dt / (2 * dx) * un[i] * (un[i + 1] - un[i - 1])
                 + nu * dt / dx**2 * (un[i + 1] - 2 * un[i] + un[i - 1]))
-
+    
     # Enforce boundary conditions
     u[0] = 0
     u[-1] = 0
 
     U[n, :] = u
 
-# Save for later use
-np.savez("fdm_solution.npz", U=U, x=x, t=t)
-
-# Optional: Plotting the heatmap
+# Plotting the heatmap
 plt.figure(figsize=(10, 6))
-plt.imshow(U, extent=[-1, 1, 0, T], aspect='auto', origin='lower', cmap='viridis')
+plt.imshow(U, extent=[-1, 1, 0, T], aspect='auto', origin='lower',
+           cmap='viridis')
 plt.colorbar(label='u(x,t)')
 plt.xlabel('x')
 plt.ylabel('t')
 plt.title("Heatmap of 1D Burgers' Equation Solution u(x,t)")
 plt.show()
+
+import pickle
+
+# Save solution for later comparison
+with open("fdm_solution.pkl", "wb") as f:
+    pickle.dump({'U': U, 'x': x, 't': t}, f)
