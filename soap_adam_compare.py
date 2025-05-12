@@ -137,11 +137,11 @@ def evaluate_model(params, model, x, t):
     return np.array(preds).reshape(x.shape)
 
 
-def plot_heatmap(U, x, t, title, cmap='viridis'):
+def plot_heatmap(U, x, t, title, cmap='viridis', vmin=None, vmax=None):
     plt.figure(figsize=(10, 6))
     plt.imshow(U, extent=[x[0], x[-1], t[0], t[-1]], aspect='auto',
-               origin='lower', cmap=cmap)
-    plt.colorbar(label='u(x,t)')
+               origin='lower', cmap=cmap, vmin=vmin, vmax=vmax)
+    plt.colorbar(label='u(x,t)' if 'Error' not in title else '|Error|')
     plt.xlabel('x'); plt.ylabel('t')
     plt.title(title)
     plt.tight_layout()
@@ -153,7 +153,6 @@ def compare_with_fdm(fdm_path, model, soap_params, adam_params):
     U_fdm, x, t = data['U'], data['x'], data['t']
     X, T = np.meshgrid(x, t)
 
-    # PINN predictions
     U_soap = evaluate_model(soap_params, model, X, T)
     U_adam = evaluate_model(adam_params, model, X, T)
 
@@ -169,16 +168,21 @@ def compare_with_fdm(fdm_path, model, soap_params, adam_params):
         plt.tight_layout()
         plt.show()
 
-    # ── 2. Heatmaps ─────────────────────────────────────────────
-    plot_heatmap(U_fdm,  x, t, "Heatmap of FDM Solution")
-    plot_heatmap(U_adam, x, t, "Heatmap of Adam PINN Solution")
-    plot_heatmap(U_soap, x, t, "Heatmap of SOAP PINN Solution")
+    # ── 2. Set common value range for fair color scaling ────────
+    umin = min(U_fdm.min(), U_adam.min(), U_soap.min())
+    umax = max(U_fdm.max(), U_adam.max(), U_soap.max())
 
-    # ── 3. Error heatmaps ───────────────────────────────────────
+    plot_heatmap(U_fdm,  x, t, "Heatmap of FDM Solution",  vmin=umin, vmax=umax)
+    plot_heatmap(U_adam, x, t, "Heatmap of Adam PINN",      vmin=umin, vmax=umax)
+    plot_heatmap(U_soap, x, t, "Heatmap of SOAP PINN",      vmin=umin, vmax=umax)
+
+    # ── 3. Error heatmaps (same color scale) ───────────────────
     error_adam = np.abs(U_fdm - U_adam)
     error_soap = np.abs(U_fdm - U_soap)
-    plot_heatmap(error_adam, x, t, "Absolute Error: |FDM - Adam|", cmap='plasma')
-    plot_heatmap(error_soap, x, t, "Absolute Error: |FDM - SOAP|", cmap='plasma')
+    emax = max(error_adam.max(), error_soap.max())
+
+    plot_heatmap(error_adam, x, t, "Absolute Error: |FDM - Adam|", cmap='plasma', vmin=0, vmax=emax)
+    plot_heatmap(error_soap, x, t, "Absolute Error: |FDM - SOAP|", cmap='plasma', vmin=0, vmax=emax)
 
 
 # ── 6) Main Execution ──────────────────────────────────────
